@@ -16,7 +16,7 @@ use function count;
 
 class ApiController extends Controller
 {
-    protected array $body;
+    protected array $body = [];
     protected ?array $pagination = null;
     private ?int $statusCode;
     protected ?Serializer $serializer = null;
