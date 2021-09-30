@@ -11,6 +11,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
 use League\Fractal\Serializer\Serializer;
 use Jamosaur\Foundation\Serializers\DefaultSerializer;
+use Jamosaur\Foundation\Contracts\TransformerContract;
 
 use function count;
 
@@ -20,7 +21,7 @@ class ApiController extends Controller
     protected ?array $pagination = null;
     private ?int $statusCode;
     protected ?Serializer $serializer = null;
-    protected mixed $transformer;
+    protected ?TransformerContract $transformer;
     private string $statusDescription;
     private array $statusDescriptionDefaults = [
         Response::HTTP_OK => 'OK', // 200
@@ -136,7 +137,7 @@ class ApiController extends Controller
         return $this->serializer ?? $this->getDefaultSerializer();
     }
 
-    public function getDefaultTransformer()
+    public function getDefaultTransformer(): TransformerContract
     {
         $namespace = '\\App\\Transformers\\';
 
@@ -145,14 +146,14 @@ class ApiController extends Controller
         return new $class();
     }
 
-    public function setTransformer($transformer): self
+    public function setTransformer(TransformerContract $transformer): self
     {
         $this->transformer = new $transformer();
 
         return $this;
     }
 
-    public function getTransformer()
+    public function getTransformer(): TransformerContract
     {
         return $this->transformer ?? $this->getDefaultTransformer();
     }
