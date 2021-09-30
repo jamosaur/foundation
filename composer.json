@@ -1,0 +1,22 @@
+{
+    "name": "jamosaur/foundation",
+    "description": "Foundation for API's in Laravel",
+    "type": "library",
+    "autoload": {
+        "psr-4": {
+            "Jamosaur\\Foundation\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "James Wallen-Jones",
+            "email": "j.wallen.jones@googlemail.com"
+        }
+    ],
+    "require": {
+        "illuminate/routing": "^8.62",
+        "illuminate/http": "^8.62",
+        "spatie/laravel-fractal": "^5.8",
+        "illuminate/support": "^8.62"
+    }
+}
