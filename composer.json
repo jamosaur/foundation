@@ -15,9 +15,9 @@
     ],
     "require": {
         "php": "^8.0|^8.1",
-        "illuminate/routing": "^8.0",
-        "illuminate/http": "^8",
-        "spatie/laravel-fractal": "^5.8",
-        "illuminate/support": "^8"
+        "illuminate/routing": "^9.0",
+        "illuminate/http": "^9.0",
+        "spatie/laravel-fractal": "^6.0",
+        "illuminate/support": "^9.0"
     }
 }
