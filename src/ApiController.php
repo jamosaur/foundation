@@ -81,8 +81,8 @@ class ApiController extends Controller
     {
         return $this->appendPagination([
             'has_more' => $paginator->hasMorePages(),
-            'next_cursor' => $paginator->nextCursor(),
-            'previous_cursor' => $paginator->previousCursor(),
+            'next_cursor' => $paginator->nextCursor()?->encode(),
+            'previous_cursor' => $paginator->previousCursor()?->encode,
         ]);
     }
 
