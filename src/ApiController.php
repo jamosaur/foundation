@@ -10,6 +10,7 @@ use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
 use League\Fractal\Serializer\Serializer;
+use Illuminate\Contracts\Pagination\CursorPaginator;
 use Jamosaur\Foundation\Serializers\DefaultSerializer;
 use Jamosaur\Foundation\Contracts\TransformerContract;
 
@@ -73,6 +74,15 @@ class ApiController extends Controller
             'per_page' => 0,
             'current_page' => 1,
             'last_page' => 1,
+        ]);
+    }
+
+    public function withCursorPagination(CursorPaginator $paginator): self
+    {
+        return $this->appendPagination([
+            'has_more' => $paginator->hasMorePages(),
+            'next_cursor' => $paginator->nextCursor(),
+            'previous_cursor' => $paginator->previousCursor(),
         ]);
     }
 
