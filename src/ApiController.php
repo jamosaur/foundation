@@ -158,7 +158,7 @@ class ApiController extends Controller
 
     public function setTransformer(TransformerContract $transformer): self
     {
-        $this->transformer = new $transformer();
+        $this->transformer = $transformer;
 
         return $this;
     }
