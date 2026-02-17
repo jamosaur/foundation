@@ -6,7 +6,7 @@
 
 This is the base that I like to use for constructing API's with Laravel.
 
-It is essentially a wrapper for spatie's laravel-fractal.
+It is essentially a wrapper for Spatie's laravel-fractal.
 
 ---
 
@@ -41,19 +41,48 @@ class UserController extends ApiController
     {
         $users = User::all();
         
-        // By default this will try to find a transformer in `App\Transformers` called 
-        // `UserTransformer`. It guesses the name of the transformer based on the controller
-        // name.
+        // By default, this will attempt to transform the data with
+        // `\App\Transformers\UserTransformer`. The package takes replaces
+        // the `Controller` in the controller name with Transformer
+        // and attempts to load it from the `\App\Transformers\ namespace.
         return $this->transformCollection('users', $users)
+            ->respond();
+    }
+    
+    public function differentNamespace(): JsonResponse
+    {
+        $users = User::all();
+        
+        // You can define a different namespace for transformers.
+        return $this->setTransformerNamespace('\\App\\Domain\\Transformers')
+            ->transformCollection('users', $users)
+            ->respond();
+    }
+    
+    public function chainingTransformers(): JsonResponse
+    {
+        $user = User::all();
+        $posts = Post::all();
+        $photo = Photo::query()->first();
+        
+        // You can also chain methods to transform multiple
+        // sets of data.
+        return $this->setTransformer(new UserTransformer())
+            ->transformCollection('users', $users)
+            ->setTransformer(new PostTransformer())
+            ->transformCollection('posts', $posts)
+            ->setTransformer(new PhotoTransformer())
+            ->transformItem('photo', $photo)
             ->respond();
     }
     
     public function definedTransformer(): JsonResponse
     {
-        $users = User::all();
+        $users = User::query()->with('profile')->get();
         
-        // You can override the transformer to use like this.
-        return $this->setTransformer(new CustomTransformer())
+        // You can override which transformer is used, and also pass in
+        // any includes.
+        return $this->setTransformer(new CustomTransformer(), ['profile'])
             ->transformCollection('users', $users)
             ->respond();
     }
