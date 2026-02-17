@@ -4,39 +4,33 @@ declare(strict_types=1);
 
 namespace Jamosaur\Foundation;
 
-use Illuminate\Support\Arr;
-use Illuminate\Http\Request;
-use Illuminate\Http\Response;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Routing\Controller;
-use League\Fractal\Serializer\Serializer;
 use Illuminate\Contracts\Pagination\CursorPaginator;
-use Jamosaur\Foundation\Serializers\DefaultSerializer;
+// use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
+use Illuminate\Routing\Controller;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Request;
 use Jamosaur\Foundation\Contracts\TransformerContract;
+use Jamosaur\Foundation\Exceptions\TransformerMissingException;
+use Jamosaur\Foundation\Serializers\DefaultSerializer;
+use League\Fractal\Serializer\Serializer;
 
 use function count;
 
 class ApiController extends Controller
 {
     protected array $body = [];
-    protected ?array $pagination = null;
-    private ?int $statusCode;
-    protected ?Serializer $serializer = null;
-    protected ?TransformerContract $transformer;
-    private string $statusDescription;
-    private array $statusDescriptionDefaults = [
-        Response::HTTP_OK => 'OK', // 200
-        Response::HTTP_PAYMENT_REQUIRED => 'Payment is required to complete this action', // 402
-        Response::HTTP_FORBIDDEN => 'Permission Denied', // 403
-        Response::HTTP_NOT_FOUND => 'The requested item was not found', // 404
-        Response::HTTP_METHOD_NOT_ALLOWED => 'Method Not Allowed', // 405
-        Response::HTTP_UNPROCESSABLE_ENTITY => 'Invalid Request', // 422
-        Response::HTTP_INTERNAL_SERVER_ERROR => 'There was a problem with your request', // 500
-    ];
 
-    public function __construct(public Request $request)
-    {
-    }
+    protected ?array $pagination = null;
+
+    private ?int $statusCode = null;
+
+    protected ?Serializer $serializer = null;
+
+    protected ?TransformerContract $transformer = null;
+
+    protected string $transformerNamespace = '\\App\\Transformers\\';
 
     public function respond(): JsonResponse
     {
@@ -60,7 +54,7 @@ class ApiController extends Controller
 
     public function withPagination(mixed $data): self
     {
-        if (method_exists($data, 'total')) {
+        if (is_object($data) && method_exists($data, 'total')) {
             return $this->appendPagination([
                 'total' => (int) $data->total(),
                 'per_page' => (int) $data->perPage(),
@@ -88,7 +82,7 @@ class ApiController extends Controller
 
     public function getStatusCode(): int
     {
-        return $this->statusCode ?? Response::HTTP_OK;
+        return $this->statusCode ?? \Symfony\Component\HttpFoundation\Response::HTTP_OK;
     }
 
     public function setStatusCode(int $statusCode): self
@@ -96,15 +90,6 @@ class ApiController extends Controller
         $this->statusCode = $statusCode;
 
         return $this;
-    }
-
-    public function getStatusDescription(): string
-    {
-        $statusCode = $this->getStatusCode();
-
-        return $this->statusDescription ??
-            $this->statusDescriptionDefaults[$statusCode] ??
-            $this->statusDescriptionDefaults[Response::HTTP_INTERNAL_SERVER_ERROR];
     }
 
     public function appendError(string $message, int $responseCode = Response::HTTP_INTERNAL_SERVER_ERROR): self
@@ -147,13 +132,26 @@ class ApiController extends Controller
         return $this->serializer ?? $this->getDefaultSerializer();
     }
 
+    /**
+     * @throws TransformerMissingException
+     */
     public function getDefaultTransformer(): TransformerContract
     {
-        $namespace = '\\App\\Transformers\\';
+        $controller = Request::instance()->attributes->get('_controller');
 
-        $class = $namespace . ucfirst($this->request->get('_controller')) . 'Transformer';
+        $class = $this->transformerNamespace.ucfirst($controller).'Transformer';
 
-        return new $class();
+        if (! class_exists($class)) {
+            throw new TransformerMissingException("Transformer class {$class} does not exist");
+        }
+
+        $transformer = new $class;
+
+        if (! ($transformer instanceof TransformerContract)) {
+            throw new TransformerMissingException("Transformer class {$class} does not implement TransformerContract");
+        }
+
+        return $transformer;
     }
 
     public function setTransformer(TransformerContract $transformer): self
@@ -163,9 +161,19 @@ class ApiController extends Controller
         return $this;
     }
 
+    /**
+     * @throws TransformerMissingException
+     */
     public function getTransformer(): TransformerContract
     {
-        return $this->transformer ?? $this->getDefaultTransformer();
+        return $this->transformer ??= $this->getDefaultTransformer();
+    }
+
+    public function setTransformerNamespace(string $namespace): self
+    {
+        $this->transformerNamespace = $namespace;
+
+        return $this;
     }
 
     private function appendPagination(array $data): self
@@ -177,6 +185,6 @@ class ApiController extends Controller
 
     private function getDefaultSerializer(): DefaultSerializer
     {
-        return new DefaultSerializer();
+        return new DefaultSerializer;
     }
 }

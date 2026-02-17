@@ -1,1 +1,7 @@
 vendor
+.phpunit.result.cache
+coverage
+.DS_Store
+Thumbs.db
+composer.phar
+.idea

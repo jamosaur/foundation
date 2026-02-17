@@ -34,5 +34,7 @@ class ApiRequestMiddleware
 
             return $next($request);
         }
+
+        return $next($request);
     }
 }
