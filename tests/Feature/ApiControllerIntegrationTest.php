@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Jamosaur\Foundation\Tests\Feature;
 
 use Illuminate\Support\Facades\Route as RouteFacade;
+use Jamosaur\Foundation\Exceptions\TransformerMissingException;
 use Jamosaur\Foundation\Middleware\ApiRequestMiddleware;
 use Jamosaur\Foundation\Tests\Fixtures\TestController;
+use Jamosaur\Foundation\Tests\Fixtures\UserController;
 use Jamosaur\Foundation\Tests\TestCase;
 
 class ApiControllerIntegrationTest extends TestCase
@@ -54,6 +56,41 @@ class ApiControllerIntegrationTest extends TestCase
     {
         RouteFacade::middleware(ApiRequestMiddleware::class)
             ->get('/api/users', [TestController::class, 'index']);
+
+        $this->get('/api/users')
+            ->assertStatus(200)
+            ->assertJson([
+                'data' => [
+                    'users' => [
+                        [
+                            'id' => 1,
+                            'name' => 'John Doe',
+                            'email' => 'john@example.com',
+                        ],
+                        [
+                            'id' => 2,
+                            'name' => 'Jane Smith',
+                            'email' => 'jane@example.com',
+                        ],
+                    ],
+                ],
+            ]);
+    }
+
+    public function test_it_throws_runtime_error_missing_transformer(): void
+    {
+        RouteFacade::middleware(ApiRequestMiddleware::class)
+            ->get('/api/users', [UserController::class, 'index']);
+
+        $this->get('/api/users')
+            ->assertStatus(500)
+            ->withException(new TransformerMissingException('Transformer class \App\Transformers\UserTransformer does not exist'));
+    }
+
+    public function test_it_infers_transformer_from_controller_name(): void
+    {
+        RouteFacade::middleware(ApiRequestMiddleware::class)
+            ->get('/api/users', [UserController::class, 'indexWithNamespace']);
 
         $this->get('/api/users')
             ->assertStatus(200)

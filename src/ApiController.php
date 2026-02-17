@@ -12,6 +12,7 @@ use Illuminate\Routing\Controller;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Request;
 use Jamosaur\Foundation\Contracts\TransformerContract;
+use Jamosaur\Foundation\Exceptions\TransformerMissingException;
 use Jamosaur\Foundation\Serializers\DefaultSerializer;
 use League\Fractal\Serializer\Serializer;
 
@@ -28,6 +29,8 @@ class ApiController extends Controller
     protected ?Serializer $serializer = null;
 
     protected ?TransformerContract $transformer = null;
+
+    protected string $transformerNamespace = '\\App\\Transformers\\';
 
     public function respond(): JsonResponse
     {
@@ -129,22 +132,23 @@ class ApiController extends Controller
         return $this->serializer ?? $this->getDefaultSerializer();
     }
 
+    /**
+     * @throws TransformerMissingException
+     */
     public function getDefaultTransformer(): TransformerContract
     {
-        $namespace = '\\App\\Transformers\\';
-
         $controller = Request::instance()->attributes->get('_controller');
 
-        $class = $namespace.ucfirst($controller).'Transformer';
+        $class = $this->transformerNamespace.ucfirst($controller).'Transformer';
 
         if (! class_exists($class)) {
-            throw new \RuntimeException("Transformer class {$class} does not exist");
+            throw new TransformerMissingException("Transformer class {$class} does not exist");
         }
 
         $transformer = new $class;
 
         if (! ($transformer instanceof TransformerContract)) {
-            throw new \RuntimeException("Transformer class {$class} does not implement TransformerContract");
+            throw new TransformerMissingException("Transformer class {$class} does not implement TransformerContract");
         }
 
         return $transformer;
@@ -157,9 +161,19 @@ class ApiController extends Controller
         return $this;
     }
 
+    /**
+     * @throws TransformerMissingException
+     */
     public function getTransformer(): TransformerContract
     {
         return $this->transformer ??= $this->getDefaultTransformer();
+    }
+
+    public function setTransformerNamespace(string $namespace): self
+    {
+        $this->transformerNamespace = $namespace;
+
+        return $this;
     }
 
     private function appendPagination(array $data): self
